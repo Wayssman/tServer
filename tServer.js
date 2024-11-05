@@ -5,6 +5,7 @@ import express from 'express'
 import mysql from 'mysql2'
 import bodyParser from 'body-parser'
 
+// Setup Connections
 const bot = new Telegraf(String(process.env.BOT_TOKEN))
 const mysqlConnection = mysql.createConnection({
   host: 'localhost',
@@ -12,6 +13,16 @@ const mysqlConnection = mysql.createConnection({
   database: 'tserver',
   password: process.env.DB_PASS
 })
+
+// Launch Bot
+bot.launch()
+if (bot) bot.telegram.getMe().then((res) => console.log(`Bot started on https://t.me/${res.username}`))
+
+// Bot bindings to graceful stop
+process.once('SIGINT', () => bot.stop('SIGINT'))
+process.once('SIGTERM', () => bot.stop('SIGTERM'))
+
+// Connect to database
 mysqlConnection.connect((err) => {
   if (!err) {
     console.log("Connected")
@@ -22,15 +33,23 @@ mysqlConnection.connect((err) => {
 })
 
 bot.on(message('text'), async (ctx) => {
-  // Explicit usage
-  await ctx.telegram.sendMessage(ctx.message.chat.id, `Hello ${ctx.state.role}`)
-  // Using context shortcut
-  await ctx.reply(`Hello ${ctx.state.role}`)
+  getMessage(ctx)
 })
 
-bot.launch()
-if (bot) bot.telegram.getMe().then((res) => console.log(`Bot started on https://t.me/${res.username}`))
+function getMessage(ctx) {
+  mysqlConnection.query(
+    "SELECT * FROM content",
+    (err, results, fields) => {
+      if (!err) {
+        console.log(results[0].Message)
+        sendToBot(ctx, results[0].Message)
+      } else {
+        console.log(err)
+      }
+    }
+  )
+}
 
-// Enable graceful stop
-process.once('SIGINT', () => bot.stop('SIGINT'))
-process.once('SIGTERM', () => bot.stop('SIGTERM'))
+async function sendToBot(ctx, message) {
+  await ctx.sendMessage(`Message is: ${message}`)
+}
