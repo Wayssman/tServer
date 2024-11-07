@@ -6,6 +6,7 @@ import schedule from 'node-schedule'
 import { parse } from 'path'
 import express from 'express'
 import { Client } from '@notionhq/client'
+import { escapers } from "@telegraf/entity";
 
 // Setup Connections
 const bot = new Telegraf(String(process.env.BOT_TOKEN))
@@ -56,11 +57,12 @@ async function assemblePost() {
 
   // Формируем сообщение и викторину
   const message = getMessage("Новое слово дня! Угадаешь ли ты? 😜", mainPage)
+  const accent = makeSafe(getPageAccent(mainPage))
   const quizVariants = getQuizVariants(mainPage, pages)
 
   // Отсылаем все в бот
   await sendMessageToBot(chatId, message)
-  await sendQuizToBot(chatId, "Какое это слово?", quizVariants[0], quizVariants[1], "Позже добавлю")
+  await sendQuizToBot(chatId, "Какое это слово?", quizVariants[0], quizVariants[1], accent)
 }
 
 function getMessage(title, page) {
@@ -70,9 +72,7 @@ function getMessage(title, page) {
   var message = `*${title}*\n`
   message += `${pageMessage}`
 
-  const safeMessage = message
-    .replace("-", "\\-")
-    .replace("!", "\\!")
+  const safeMessage = makeSafe(message)
   const imageMessage = `[\u200B](${pageImageUrl})`
   const fullMessage = safeMessage + imageMessage
 
@@ -122,6 +122,10 @@ function getPageTitle(page) {
   return page.properties.title.title[0].text.content
 }
 
+function getPageAccent(page) {
+  return page.properties.accent.rich_text[0].text.content
+}
+
 function getPageMessage(page) {
   return page.properties.message.rich_text[0].text.content
 }
@@ -131,6 +135,10 @@ function getPageImage(page) {
 }
 
 // Extensions
+function makeSafe(text) {
+  return escapers.MarkdownV2(text)
+}
+
 Array.prototype.random = function () {
   return this[Math.floor((Math.random()*this.length))];
 }
