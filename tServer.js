@@ -14,6 +14,10 @@ const app = express();
 const notion = new Client({
   auth: process.env.NOTION_KEY
 })
+const telegramAdminName = process.env.TELEGRAM_ADMIN_NAME
+const commandPrefix = "togroup"
+var adminChatId = ""
+const telegramGroupChatId = process.env.CHAT_ID
 
 app.use(express.static('public'))
 app.listen(3000, function () {
@@ -31,51 +35,80 @@ process.once('SIGTERM', () => bot.stop('SIGTERM'))
 
 // Listeners
 bot.on(message('text'), async (ctx) => {
-  console.log(`Chat id is: ${ctx.message.chat.id}`)
-  assemblePost()
+  // Распознаем сообщения только от админа
+  if (ctx.message.from.username === telegramAdminName) {
+    // Сохраняем id чата с админом для отправки тестового поста
+    adminChatId = ctx.message.chat.id
+    console.log(`Admin chat id is: ${adminChatId}`)
+    // Читаем сообщение от админа и передаем в обработчик комманд
+    const text = ctx.message.text
+    console.log(text)
+
+    if (text) {
+      handleCommand(text)
+    }
+  }
 })
 
 const job = schedule.scheduleJob('* * * * *', function() {
   
 })
 
-
 // Internal
-async function assemblePost() {
+function handleCommand(text) {
+  const words = text.split(" ")
+  if (words.length === 2 && words[0] === commandPrefix) {
+    assemblePost(words[1], adminChatId)
+  } else if (words.length === 1) {
+    assemblePost(words[0], process.env.CHAT_ID)
+  }
+}
+
+async function assemblePost(word, chatId) {
+  // Проверки слова
+  if (word.length === 0) {
+    console.log("Error. Word of the day is Empty!")
+    await bot.telegram.sendMessage(adminChatId, `Невозможно распознать слово.`)
+    return
+  }
+
   // Вытаскиваем сохраненные переменные
   const databaseId = process.env.NOTION_DB_ID
-  const chatId = process.env.CHAT_ID
 
   // Получаем все записи из БД
   const pagesResponse = await notion.databases.query({
     database_id: databaseId
   })
   
-  // Вытаскиваем все страницы и выбираем запись на отображение
+  // Вытаскиваем все страницы и ищем страницу для слова в БД
   const pages = pagesResponse.results
-  const mainPage = pages.random()
+  const mainPage = pages.find(x => getPageTitle(x).toLowerCase() === word.toLowerCase())
+
+  if (!mainPage) {
+    console.log("Error. Page not found!")
+    await bot.telegram.sendMessage(adminChatId, `Слово ${word} не найдено.`)
+    return
+  }
 
   // Формируем сообщение и викторину
   const message = getMessage("Новое слово дня! Угадаешь ли ты? 😜", mainPage)
-  const accent = makeSafe(getPageAccent(mainPage))
+  const accent = getPageAccent(mainPage)
   const quizVariants = getQuizVariants(mainPage, pages)
 
   // Отсылаем все в бот
-  await sendMessageToBot(chatId, message)
+  await sendPostToBot(chatId, message)
   await sendQuizToBot(chatId, "Какое это слово?", quizVariants[0], quizVariants[1], accent)
 }
 
 function getMessage(title, page) {
   const pageMessage = getPageMessage(page)
   const pageImageUrl = getPageImage(page)
-
-  var message = `*${title}*\n`
-  message += `${pageMessage}`
-
-  const safeMessage = makeSafe(message)
+  
+  const titleMessage = `*${makeSafe(`${title}`)}* \n\n`
+  const postMessage = makeSafe(pageMessage)
   const imageMessage = `[\u200B](${pageImageUrl})`
-  const fullMessage = safeMessage + imageMessage
 
+  const fullMessage = titleMessage + postMessage + imageMessage
   return fullMessage
 }
 
@@ -105,7 +138,7 @@ function getQuizVariants(mainPage, pages) {
   return [savedVariants, mainIndex]
 }
 
-async function sendMessageToBot(chatId, message) {
+async function sendPostToBot(chatId, message) {
   await bot.telegram.sendMessage(chatId, message, {
     parse_mode: "MarkdownV2"
   })
