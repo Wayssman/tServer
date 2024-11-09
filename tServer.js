@@ -3,14 +3,11 @@ import { message } from 'telegraf/filters'
 import 'dotenv/config'
 import mysql from 'mysql2'
 import schedule from 'node-schedule'
-import { parse } from 'path'
-import express from 'express'
 import { Client } from '@notionhq/client'
 import { escapers } from "@telegraf/entity";
 
 // Setup Connections
 const bot = new Telegraf(String(process.env.BOT_TOKEN))
-const app = express();
 const notion = new Client({
   auth: process.env.NOTION_KEY
 })
@@ -18,12 +15,6 @@ const telegramAdminName = process.env.TELEGRAM_ADMIN_NAME
 const commandPrefix = "togroup"
 var adminChatId = ""
 const telegramGroupChatId = process.env.CHAT_ID
-
-app.use(express.static('public'))
-app.listen(3000, function () {
-  console.log('Listening on http://localhost:3000/');
-});
-
 
 // Launch Bot
 bot.launch()
@@ -91,7 +82,7 @@ async function assemblePost(word, chatId) {
   }
 
   // Формируем сообщение и викторину
-  const message = getMessage("Новое слово дня! Угадаешь ли ты? 😜", mainPage)
+  const message = getMessage("Новое слово дня! Угадаешь ли ты?", mainPage)
   const accent = getPageAccent(mainPage)
   const quizVariants = getQuizVariants(mainPage, pages)
 
