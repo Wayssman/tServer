@@ -1,20 +1,12 @@
 import { Telegraf } from 'telegraf'
 import { message } from 'telegraf/filters'
 import 'dotenv/config'
-import mysql from 'mysql2'
-import schedule from 'node-schedule'
-import { Client } from '@notionhq/client'
 import { escapers } from "@telegraf/entity";
+import { sshConnection } from './sshDatabaseConnection.js'
+import { defaultConnection } from './defaultDatabaseConnection.js'
 
-// Setup Connections
+// Setup Bot
 const bot = new Telegraf(String(process.env.BOT_TOKEN))
-const notion = new Client({
-  auth: process.env.NOTION_KEY
-})
-const telegramAdminName = process.env.TELEGRAM_ADMIN_NAME
-const commandPrefix = "togroup"
-var adminChatId = ""
-const telegramGroupChatId = process.env.CHAT_ID
 
 // Launch Bot
 bot.launch()
@@ -25,108 +17,134 @@ process.once('SIGINT', () => bot.stop('SIGINT'))
 process.once('SIGTERM', () => bot.stop('SIGTERM'))
 
 // Listeners
-bot.on(message('text'), async (ctx) => {
-  // Распознаем сообщения только от админа
-  if (ctx.message.from.username === telegramAdminName) {
-    // Сохраняем id чата с админом для отправки тестового поста
-    adminChatId = ctx.message.chat.id
-    console.log(`Admin chat id is: ${adminChatId}`)
-    // Читаем сообщение от админа и передаем в обработчик комманд
-    const text = ctx.message.text
-    console.log(text)
-
-    if (text) {
-      handleCommand(text)
-    }
-  }
+bot.command('word', async (ctx) => {
+  assembleQuiz(ctx.message.chat.id)
 })
 
-const job = schedule.scheduleJob('* * * * *', function() {
-  
+bot.on(message('text'), async (ctx) => {
+  // Распознаем сообщения только от админа
+  if (ctx.message.from.username === process.env.TELEGRAM_ADMIN_NAME) {
+    // Читаем сообщение от админа и передаем в обработчик комманд
+    assemblePost(ctx.message.chat.id, ctx.message.text)
+  }
 })
 
 // Internal
-function handleCommand(text) {
-  const words = text.split(" ")
-  if (words.length === 2 && words[0] === commandPrefix) {
-    assemblePost(words[1], adminChatId)
-  } else if (words.length === 1) {
-    assemblePost(words[0], process.env.CHAT_ID)
+async function assembleQuiz(chatId) {
+  try {
+    // Соединяемся с БД
+    const connection = await defaultConnection()
+    //const connection = await sshConnection()
+    // Вытаскиваем 4 случайны записи из БД
+    const words = await fetchRandomWords(connection, 4)
+
+    // Проверка на пустой список
+    if (words.length < 1) {
+      throw new Error("Words list is empty")
+    }
+
+    // Зададим первое слово из списка, как главное
+    const mainWord = words[0]
+
+    // Формируем сообщение и викторину
+    const message = getQuizMessage("Новое слово дня! Угадаешь ли ты?", mainWord)
+    const hint = getHint(mainWord)
+    const quizVariants = getQuizVariants(mainWord, words)
+
+    // Отсылаем все в бот
+    await sendPostToBot(chatId, message)
+    await sendQuizToBot(chatId, "Какое это слово?", quizVariants[0], quizVariants[1], hint)
+  } catch (error) {
+    console.error(error)
   }
 }
 
-async function assemblePost(word, chatId) {
-  // Проверки слова
-  if (word.length === 0) {
-    console.log("Error. Word of the day is Empty!")
-    await bot.telegram.sendMessage(adminChatId, `Невозможно распознать слово.`)
-    return
+async function assemblePost(chatId, text) {
+  try {
+    // Проверяем формат ввода
+    const words = text.split(" ")
+    if (words.length !== 1) { 
+      throw new Error("Wrong input format")
+    }
+    const word = words[0]
+    if (word.length === 0) {
+      throw new Error("Word is empty")
+    }
+
+    // Соединяемся с БД
+    const connection = await defaultConnection()
+    //const connection = await sshConnection()
+    // Ищем это слово
+    const searchResult = await fetchFirstWord(connection, word)
+
+    // Проверяем результат поиск
+    if (searchResult.length === 0) {
+      throw new Error("Search is empty")
+    }
+    const postWord = searchResult[0]
+    if (postWord.length === 0) {
+      throw new Error("Found word is empty")
+    }
+
+    // Формируем пост
+    const postMessage = getPostMessage(postWord)
+
+    // Отсылаем пост в бот
+    await sendPostToBot(chatId, postMessage)
+  } catch (error) {
+    console.error(error)
   }
+}
 
-  // Вытаскиваем сохраненные переменные
-  const databaseId = process.env.NOTION_DB_ID
-
-  // Получаем все записи из БД
-  const pagesResponse = await notion.databases.query({
-    database_id: databaseId
+function fetchRandomWords(connection, limit) {
+  return new Promise((resolve, reject) => {
+    connection.query(`SELECT * FROM content ORDER BY RAND( ) LIMIT ${limit}`, (error, results) => {
+      if (error) {
+        reject(error)
+      }
+      resolve(results)
+    })
   })
-  
-  // Вытаскиваем все страницы и ищем страницу для слова в БД
-  const pages = pagesResponse.results
-  const mainPage = pages.find(x => getPageTitle(x).toLowerCase() === word.toLowerCase())
-
-  if (!mainPage) {
-    console.log("Error. Page not found!")
-    await bot.telegram.sendMessage(adminChatId, `Слово ${word} не найдено.`)
-    return
-  }
-
-  // Формируем сообщение и викторину
-  const message = getMessage("Новое слово дня! Угадаешь ли ты?", mainPage)
-  const accent = getPageAccent(mainPage)
-  const quizVariants = getQuizVariants(mainPage, pages)
-
-  // Отсылаем все в бот
-  await sendPostToBot(chatId, message)
-  await sendQuizToBot(chatId, "Какое это слово?", quizVariants[0], quizVariants[1], accent)
 }
 
-function getMessage(title, page) {
-  const pageMessage = getPageMessage(page)
-  const pageImageUrl = getPageImage(page)
-  
+function fetchFirstWord(connection, word) {
+  return new Promise((resolve, reject) => {
+    connection.query(`SELECT * FROM content WHERE LOWER(title) = '${word.toLowerCase()}' LIMIT 1`, (error, results) => {
+      if (error) {
+        reject(error)
+      }
+      resolve(results)
+    })
+  })
+}
+
+function getQuizMessage(title, word) {
   const titleMessage = `*${makeSafe(`${title}`)}* \n\n`
-  const postMessage = makeSafe(pageMessage)
-  const imageMessage = `[\u200B](${pageImageUrl})`
+  const postMessage = makeSafe(word.message)
+  const imageMessage = `[\u200B](${word.image})`
 
   const fullMessage = titleMessage + postMessage + imageMessage
   return fullMessage
 }
 
-function getQuizVariants(mainPage, pages) {
-  // Формируем список вариантов текстов
-  const pagesTitles = pages.map(x => getPageTitle(x))
+function getQuizVariants(mainWord, words) {
+  var pagesTitles = words.map(x => x.title) // Формируем список вариантов по title
+  shuffle(pagesTitles) // Перемешиваем их
+  const mainIndex = pagesTitles.findIndex(x => x === mainWord.title) // Правильный вариант
+  return [pagesTitles, mainIndex]
+}
 
-  // Правильный вариант
-  const mainPageTitle = getPageTitle(mainPage)
+function getHint(word) {
+  return word.accent
+}
 
-  // Создаем из правильного варианта заготовку на список всех вариантов
-  var savedVariants = [mainPageTitle]
+function getPostMessage(word) {
+  const titleMessage = `*${makeSafe(`${word.title}`)}* \n\n`
+  const postMessage = makeSafe(word.message)
+  const imageMessage = `[\u200B](${word.image})`
 
-  // В идеале нам нужны еще 3 рандомных варианта, которые не пересекаются друг с другом
-  for (var i = 0; i < 3; i++) {
-    const toRemove = new Set(savedVariants)  // Set для быстрого фильтра
-    const filteredTitles = pagesTitles.filter(x => !toRemove.has(x));  // Исключаем на каждой итерации уже сохраненные
-    const randomTitle = filteredTitles.random()  // Среди отфильтрованных ищем случайный
-
-    if (randomTitle) {
-      savedVariants.push(randomTitle) // Добавляем, если нашли
-    }
-  }
-
-  shuffle(savedVariants)
-  const mainIndex = savedVariants.findIndex(x => x === mainPageTitle)
-  return [savedVariants, mainIndex]
+  const fullMessage = titleMessage + postMessage + imageMessage
+  return fullMessage
 }
 
 async function sendPostToBot(chatId, message) {
@@ -142,29 +160,13 @@ async function sendQuizToBot(chatId, introduction, variants, rightIndex, explana
   })
 }
 
-function getPageTitle(page) {
-  return page.properties.title.title[0].text.content
-}
-
-function getPageAccent(page) {
-  return page.properties.accent.rich_text[0].text.content
-}
-
-function getPageMessage(page) {
-  return page.properties.message.rich_text[0].text.content
-}
-
-function getPageImage(page) {
-  return page.properties.image.files[0].file.url
-}
-
 // Extensions
 function makeSafe(text) {
   return escapers.MarkdownV2(text)
 }
 
 Array.prototype.random = function () {
-  return this[Math.floor((Math.random()*this.length))];
+  return this[Math.floor((Math.random() * this.length))];
 }
 
 function shuffle(array) {
