@@ -51,8 +51,8 @@ function handleAdminMessage(chatId, text) {
 async function assembleQuiz(chatId) {
   try {
     // Соединяемся с БД
-    //const connection = await defaultConnection()
-    const connection = await sshConnection()
+    const connection = await defaultConnection()
+    //const connection = await sshConnection()
     // Вытаскиваем 4 случайны записи из БД
     const words = await fetchRandomWords(connection, 4)
 
@@ -84,8 +84,8 @@ async function assemblePost(chatId, word) {
     }
 
     // Соединяемся с БД
-    //const connection = await defaultConnection()
-    const connection = await sshConnection()
+    const connection = await defaultConnection()
+    //const connection = await sshConnection()
     // Ищем это слово
     const searchResult = await fetchFirstWord(connection, word)
 
