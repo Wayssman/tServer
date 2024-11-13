@@ -1,9 +1,10 @@
 import { Telegraf } from 'telegraf'
 import { message } from 'telegraf/filters'
 import 'dotenv/config'
-import { escapers } from "@telegraf/entity";
-import { sshConnection } from './sshDatabaseConnection.js'
-import { defaultConnection } from './defaultDatabaseConnection.js'
+import { sshConnection } from './Database/sshDatabaseConnection.js'
+import { defaultConnection } from './Database/defaultDatabaseConnection.js'
+import { shuffle } from './Utilities/coreUtilities.js'
+import { makeSafe } from './Utilities/telegramUtilities.js'
 
 // Setup Bot
 const bot = new Telegraf(String(process.env.BOT_TOKEN))
@@ -25,16 +26,33 @@ bot.on(message('text'), async (ctx) => {
   // Распознаем сообщения только от админа
   if (ctx.message.from.username === process.env.TELEGRAM_ADMIN_NAME) {
     // Читаем сообщение от админа и передаем в обработчик комманд
-    assemblePost(ctx.message.chat.id, ctx.message.text)
+    handleAdminMessage(ctx.message.chat.id, ctx.message.text)
   }
 })
+
+function handleAdminMessage(chatId, text) {
+  // Проверяем формат ввода
+  const words = text.split(" ")
+  if (words.length == 1) {
+    assemblePost(chatId, words[0])
+  } else if (words.length == 2) {
+    if (words[0] === process.env.COMMAND_TOGROUP) {
+      assemblePost(process.env.TELEGRAM_CHANNEL_ID, words[1])
+    } else {
+      console.error("Unknown command")
+    }
+  } else {
+    console.error("Unknown text format")
+    return
+  }
+}
 
 // Internal
 async function assembleQuiz(chatId) {
   try {
     // Соединяемся с БД
-    const connection = await defaultConnection()
-    //const connection = await sshConnection()
+    //const connection = await defaultConnection()
+    const connection = await sshConnection()
     // Вытаскиваем 4 случайны записи из БД
     const words = await fetchRandomWords(connection, 4)
 
@@ -59,21 +77,15 @@ async function assembleQuiz(chatId) {
   }
 }
 
-async function assemblePost(chatId, text) {
+async function assemblePost(chatId, word) {
   try {
-    // Проверяем формат ввода
-    const words = text.split(" ")
-    if (words.length !== 1) { 
-      throw new Error("Wrong input format")
-    }
-    const word = words[0]
     if (word.length === 0) {
       throw new Error("Word is empty")
     }
 
     // Соединяемся с БД
-    const connection = await defaultConnection()
-    //const connection = await sshConnection()
+    //const connection = await defaultConnection()
+    const connection = await sshConnection()
     // Ищем это слово
     const searchResult = await fetchFirstWord(connection, word)
 
@@ -158,29 +170,4 @@ async function sendQuizToBot(chatId, introduction, variants, rightIndex, explana
     correct_option_id: rightIndex,
     explanation: explanation
   })
-}
-
-// Extensions
-function makeSafe(text) {
-  return escapers.MarkdownV2(text)
-}
-
-Array.prototype.random = function () {
-  return this[Math.floor((Math.random() * this.length))];
-}
-
-function shuffle(array) {
-  let currentIndex = array.length;
-
-  // While there remain elements to shuffle...
-  while (currentIndex != 0) {
-
-    // Pick a remaining element...
-    let randomIndex = Math.floor(Math.random() * currentIndex);
-    currentIndex--;
-
-    // And swap it with the current element.
-    [array[currentIndex], array[randomIndex]] = [
-      array[randomIndex], array[currentIndex]];
-  }
 }
