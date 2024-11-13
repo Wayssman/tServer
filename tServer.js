@@ -7,7 +7,8 @@ import { shuffle } from './Utilities/coreUtilities.js'
 import { makeSafe } from './Utilities/telegramUtilities.js'
 
 // Setup Bot
-const bot = new Telegraf(String(process.env.BOT_TOKEN))
+const isRelease = (process.env.BUILD === "release")
+const bot = new Telegraf(String(isRelease ? process.env.BOT_TOKEN : process.env.DEBUG_BOT_TOKEN))
 
 // Launch Bot
 bot.launch()
@@ -36,7 +37,7 @@ function handleAdminMessage(chatId, text) {
   if (words.length == 1) {
     assemblePost(chatId, words[0])
   } else if (words.length == 2) {
-    if (words[0] === process.env.COMMAND_TOGROUP) {
+    if (words[0] === process.env.COMMAND_TOGROUP && isRelease) {
       assemblePost(process.env.TELEGRAM_CHANNEL_ID, words[1])
     } else {
       console.error("Unknown command")
@@ -51,8 +52,7 @@ function handleAdminMessage(chatId, text) {
 async function assembleQuiz(chatId) {
   try {
     // Соединяемся с БД
-    const connection = await defaultConnection()
-    //const connection = await sshConnection()
+    const connection = isRelease ? await defaultConnection() : await sshConnection()
     // Вытаскиваем 4 случайны записи из БД
     const words = await fetchRandomWords(connection, 4)
 
@@ -84,8 +84,7 @@ async function assemblePost(chatId, word) {
     }
 
     // Соединяемся с БД
-    const connection = await defaultConnection()
-    //const connection = await sshConnection()
+    const connection = isRelease ? await defaultConnection() : await sshConnection()
     // Ищем это слово
     const searchResult = await fetchFirstWord(connection, word)
 
