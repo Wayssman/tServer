@@ -6,6 +6,8 @@ import { defaultConnection } from './Database/defaultDatabaseConnection.js'
 import { shuffle } from './Utilities/coreUtilities.js'
 import { makeSafe } from './Utilities/telegramUtilities.js'
 import schedule from 'node-schedule'
+import * as dbFunctions from './Database/databaseRequests.js'
+import * as coreErrors from './Utilities/coreErrors.js'
 
 // Setup
 const isRelease = (process.env.BUILD === "release")
@@ -24,6 +26,10 @@ bot.command('word', async (ctx) => {
   assembleQuiz(ctx.message.chat.id)
 })
 
+bot.command('list', async (ctx) => {
+  assembleList(ctx.message.chat.id, ctx.message.text)
+})
+
 bot.on(message('text'), async (ctx) => {
   // Распознаем сообщения только от админа
   if (ctx.message.from.username === process.env.TELEGRAM_ADMIN_NAME) {
@@ -33,7 +39,7 @@ bot.on(message('text'), async (ctx) => {
 })
 
 const job = schedule.scheduleJob('* 10 * * *', function() {
-  assembleScheduledPost(process.env.TELEGRAM_CHANNEL_ID)
+  assembleScheduledPost(isRelease ? process.env.TELEGRAM_CHANNEL_ID : process.env.TELEGRAM_ADMIN_CHAT_ID)
 })
 
 function handleAdminMessage(chatId, text) {
@@ -59,14 +65,14 @@ async function assembleScheduledPost(chatId) {
     const connection = isRelease ? await defaultConnection() : await sshConnection()
 
     // Вытаскиваем счетчик
-    const counter = await fetchChannelCounter(connection, chatId)
+    const counter = await dbFunctions.fetchChannelCounter(connection, chatId)
     if (counter.length === 0) {
       throw new Error("Can't fetch channel counter")
     }
 
     // По id из счетчика вытаскиваем слово
     const wordId = counter[0].id
-    const searchResult = await fetchWordById(connection, wordId)
+    const searchResult = await dbFunctions.fetchWordById(connection, wordId)
     if (searchResult.length === 0) {
       throw new Error("Reached the end of the Database")
     }
@@ -81,23 +87,51 @@ async function assembleScheduledPost(chatId) {
     // Отсылаем пост в бот
     await sendPostToBot(chatId, postMessage)
 
-    setChannelCounter(connection, chatId, wordId + 1)
+    dbFunctions.setChannelCounter(connection, chatId, wordId + 1)
   } catch (error) {
     console.error(error)
   }
 }
 
 // Internal
+async function assembleList(chatId, text) {
+  try {
+    const words = text.split(" ")
+    if (words.length !== 2) {
+      throw new coreErrors.CommandListError("Wrong input")
+    }
+    
+    const pageWord = words[1]
+    if (pageWord.length === 0) {
+      throw new coreErrors.CommandListError("Wrong input")
+    }
+
+    const page = parseInt(pageWord)
+    if (page < 1) {
+      throw new coreErrors.CommandListError("Wrong page input")
+    }
+
+    const connection = isRelease ? await defaultConnection() : await sshConnection()
+    const list = await dbFunctions.fetchWordsList(connection, page)
+    const listString = list.map(x => x.title).join(", ")
+    
+    await bot.telegram.sendMessage(chatId, `Страница ${page}: ` + listString)
+  } catch (error) {
+    await bot.telegram.sendMessage(chatId, coreErrors.getErrorDescription(error))
+    console.error(error)
+  }
+}
+
 async function assembleQuiz(chatId) {
   try {
     // Соединяемся с БД
     const connection = isRelease ? await defaultConnection() : await sshConnection()
     // Вытаскиваем 4 случайны записи из БД
-    const words = await fetchRandomWords(connection, 4)
+    const words = await dbFunctions.fetchRandomWords(connection, 4)
 
     // Проверка на пустой список
     if (words.length < 1) {
-      throw new Error("Words list is empty")
+      throw new coreErrors.CommandWordError("Words list is empty")
     }
 
     // Зададим первое слово из списка, как главное
@@ -112,6 +146,7 @@ async function assembleQuiz(chatId) {
     await sendPostToBot(chatId, message)
     await sendQuizToBot(chatId, "Какое это слово?", quizVariants[0], quizVariants[1], hint)
   } catch (error) {
+    await bot.telegram.sendMessage(chatId, coreErrors.getErrorDescription(error))
     console.error(error)
   }
 }
@@ -125,7 +160,7 @@ async function assemblePost(chatId, word) {
     // Соединяемся с БД
     const connection = isRelease ? await defaultConnection() : await sshConnection()
     // Ищем это слово
-    const searchResult = await fetchFirstWord(connection, word)
+    const searchResult = await dbFunctions.fetchFirstWord(connection, word)
 
     // Проверяем результат поиск
     if (searchResult.length === 0) {
@@ -144,61 +179,6 @@ async function assemblePost(chatId, word) {
   } catch (error) {
     console.error(error)
   }
-}
-
-function fetchRandomWords(connection, limit) {
-  return new Promise((resolve, reject) => {
-    connection.query(`SELECT * FROM content ORDER BY RAND( ) LIMIT ${limit}`, (error, results) => {
-      if (error) {
-        reject(error)
-      }
-      resolve(results)
-    })
-  })
-}
-
-function fetchFirstWord(connection, word) {
-  return new Promise((resolve, reject) => {
-    connection.query(`SELECT * FROM content WHERE LOWER(title) = '${word.toLowerCase()}' LIMIT 1`, (error, results) => {
-      if (error) {
-        reject(error)
-      }
-      resolve(results)
-    })
-  })
-}
-
-function fetchChannelCounter(connection, channelId) {
-  return new Promise((resolve, reject) => {
-    connection.query(`SELECT * FROM channels_data WHERE channelId = '${channelId}' LIMIT 1`, (error, results) => {
-      if (error) {
-        reject(error)
-      }
-      resolve(results)
-    })
-  })
-}
-
-function setChannelCounter(connection, channelId, newId) {
-  return new Promise((resolve, reject) => {
-    connection.query(`UPDATE channels_data SET id = ${newId} WHERE channelId = '${channelId}'`, (error, results) => {
-      if (error) {
-        reject(error)
-      }
-      resolve(results)
-    })
-  })
-}
-
-function fetchWordById(connection, wordId) {
-  return new Promise((resolve, reject) => {
-    connection.query(`SELECT * FROM content WHERE id = '${wordId}' LIMIT 1`, (error, results) => {
-      if (error) {
-        reject(error)
-      }
-      resolve(results)
-    })
-  })
 }
 
 function getQuizMessage(title, word) {
