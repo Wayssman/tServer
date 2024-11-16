@@ -5,8 +5,9 @@ import { sshConnection } from './Database/sshDatabaseConnection.js'
 import { defaultConnection } from './Database/defaultDatabaseConnection.js'
 import { shuffle } from './Utilities/coreUtilities.js'
 import { makeSafe } from './Utilities/telegramUtilities.js'
+import schedule from 'node-schedule'
 
-// Setup Bot
+// Setup
 const isRelease = (process.env.BUILD === "release")
 const bot = new Telegraf(String(isRelease ? process.env.BOT_TOKEN : process.env.DEBUG_BOT_TOKEN))
 
@@ -31,6 +32,10 @@ bot.on(message('text'), async (ctx) => {
   }
 })
 
+const job = schedule.scheduleJob('* 10 * * *', function() {
+  assembleScheduledPost(process.env.TELEGRAM_CHANNEL_ID)
+})
+
 function handleAdminMessage(chatId, text) {
   // Проверяем формат ввода
   const words = text.split(" ")
@@ -45,6 +50,40 @@ function handleAdminMessage(chatId, text) {
   } else {
     console.error("Unknown text format")
     return
+  }
+}
+
+async function assembleScheduledPost(chatId) {
+  try {
+    // Соединяемся с БД
+    const connection = isRelease ? await defaultConnection() : await sshConnection()
+
+    // Вытаскиваем счетчик
+    const counter = await fetchChannelCounter(connection, chatId)
+    if (counter.length === 0) {
+      throw new Error("Can't fetch channel counter")
+    }
+
+    // По id из счетчика вытаскиваем слово
+    const wordId = counter[0].id
+    const searchResult = await fetchWordById(connection, wordId)
+    if (searchResult.length === 0) {
+      throw new Error("Reached the end of the Database")
+    }
+    const postWord = searchResult[0]
+    if (postWord.length === 0) {
+      throw new Error("Found word is empty")
+    }
+
+    // Формируем пост
+    const postMessage = getPostMessage(postWord)
+
+    // Отсылаем пост в бот
+    await sendPostToBot(chatId, postMessage)
+
+    setChannelCounter(connection, chatId, wordId + 1)
+  } catch (error) {
+    console.error(error)
   }
 }
 
@@ -121,6 +160,39 @@ function fetchRandomWords(connection, limit) {
 function fetchFirstWord(connection, word) {
   return new Promise((resolve, reject) => {
     connection.query(`SELECT * FROM content WHERE LOWER(title) = '${word.toLowerCase()}' LIMIT 1`, (error, results) => {
+      if (error) {
+        reject(error)
+      }
+      resolve(results)
+    })
+  })
+}
+
+function fetchChannelCounter(connection, channelId) {
+  return new Promise((resolve, reject) => {
+    connection.query(`SELECT * FROM channels_data WHERE channelId = '${channelId}' LIMIT 1`, (error, results) => {
+      if (error) {
+        reject(error)
+      }
+      resolve(results)
+    })
+  })
+}
+
+function setChannelCounter(connection, channelId, newId) {
+  return new Promise((resolve, reject) => {
+    connection.query(`UPDATE channels_data SET id = ${newId} WHERE channelId = '${channelId}'`, (error, results) => {
+      if (error) {
+        reject(error)
+      }
+      resolve(results)
+    })
+  })
+}
+
+function fetchWordById(connection, wordId) {
+  return new Promise((resolve, reject) => {
+    connection.query(`SELECT * FROM content WHERE id = '${wordId}' LIMIT 1`, (error, results) => {
       if (error) {
         reject(error)
       }
