@@ -3,7 +3,7 @@ import { message } from 'telegraf/filters'
 import 'dotenv/config'
 import { sshConnection } from './Database/sshDatabaseConnection.js'
 import { defaultConnection } from './Database/defaultDatabaseConnection.js'
-import { shuffle } from './Utilities/coreUtilities.js'
+import { shuffle, getWordArgument, getNumberArgument } from './Utilities/coreUtilities.js'
 import { makeSafe } from './Utilities/telegramUtilities.js'
 import schedule from 'node-schedule'
 import * as dbFunctions from './Database/databaseRequests.js'
@@ -12,6 +12,8 @@ import * as coreErrors from './Utilities/coreErrors.js'
 // Setup
 const isRelease = (process.env.BUILD === "release")
 const bot = new Telegraf(String(isRelease ? process.env.BOT_TOKEN : process.env.DEBUG_BOT_TOKEN))
+const connection = isRelease ? await defaultConnection() : await sshConnection()
+const channelId = isRelease ? process.env.TELEGRAM_CHANNEL_ID : process.env.TELEGRAM_ADMIN_CHAT_ID
 
 // Launch Bot
 bot.launch()
@@ -23,12 +25,41 @@ process.once('SIGTERM', () => bot.stop('SIGTERM'))
 
 // Listeners
 bot.command('word', async (ctx) => {
-  assembleQuiz(ctx.message.chat.id)
+  assembleQuiz(ctx.chat.id)
 })
 
 bot.command('list', async (ctx) => {
-  assembleList(ctx.message.chat.id, ctx.message.text)
+  assembleList(ctx.chat.id, ctx.message.text)
 })
+
+/*bot.command('favorite', async (ctx) => {
+  try {
+    const text = ctx.message.text
+    const words = text.split(" ")
+    const searchWord = words[1]
+    const word = await await dbFunctions.fetchFirstWord(connection, searchWord)
+    const wordId = word[0].id
+    //const results = await dbFunctions.setChannelFavorite(connection, ctx.chat.id, wordId)
+    //const results = await dbFunctions.deleteChannelFavorite(connection, ctx.chat.id, wordId)
+    console.log(results)
+  } catch (error) {
+    console.log(error)
+  }
+})
+
+bot.command('listFavorites', async (ctx) => {
+  try {
+    const text = ctx.message.text
+    const words = text.split(" ")
+    const pageWord = words[1]
+    const page = parseInt(pageWord)
+    const list = await dbFunctions.fetchFavoritesList(connection, ctx.chat.id, page)
+    const listString = list.map(x => x.title).join(", ")
+    console.log(listString)
+  } catch (error) {
+    console.log(error)
+  }
+})*/
 
 bot.on(message('text'), async (ctx) => {
   // Распознаем сообщения только от админа
@@ -38,32 +69,32 @@ bot.on(message('text'), async (ctx) => {
   }
 })
 
-const job = schedule.scheduleJob('* 10 * * *', function() {
-  assembleScheduledPost(isRelease ? process.env.TELEGRAM_CHANNEL_ID : process.env.TELEGRAM_ADMIN_CHAT_ID)
+const job = schedule.scheduleJob('0 10 * * *', function() {
+  assembleScheduledPost(channelId)
 })
 
-function handleAdminMessage(chatId, text) {
-  // Проверяем формат ввода
-  const words = text.split(" ")
-  if (words.length == 1) {
-    assemblePost(chatId, words[0])
-  } else if (words.length == 2) {
-    if (words[0] === process.env.COMMAND_TOGROUP && isRelease) {
-      assemblePost(process.env.TELEGRAM_CHANNEL_ID, words[1])
+async function handleAdminMessage(chatId, text) {
+  try {
+    // Проверяем формат ввода
+    const checkResult = getWordArgument(text, "word")
+    const word = checkResult[0]
+    const argument = checkResult[1]
+    
+    if (argument === process.env.COMMAND_TOGROUP) {
+      await assemblePost(channelId, word)
+    } else if (!argument) {
+      await assemblePost(chatId, word)
     } else {
-      console.error("Unknown command")
+      throw new coreErrors.ArgumentParseError("word")
     }
-  } else {
-    console.error("Unknown text format")
-    return
+  } catch(error) {
+    await bot.telegram.sendMessage(chatId, coreErrors.getErrorDescription(error))
+    console.error(error)
   }
 }
 
 async function assembleScheduledPost(chatId) {
   try {
-    // Соединяемся с БД
-    const connection = isRelease ? await defaultConnection() : await sshConnection()
-
     // Вытаскиваем счетчик
     const counter = await dbFunctions.fetchChannelCounter(connection, chatId)
     if (counter.length === 0) {
@@ -96,22 +127,10 @@ async function assembleScheduledPost(chatId) {
 // Internal
 async function assembleList(chatId, text) {
   try {
-    const words = text.split(" ")
-    if (words.length !== 2) {
-      throw new coreErrors.CommandListError("Wrong input")
-    }
-    
-    const pageWord = words[1]
-    if (pageWord.length === 0) {
-      throw new coreErrors.CommandListError("Wrong input")
-    }
+    const checkResult = getNumberArgument(text, "list")
+    const command = checkResult[0]
+    const page = checkResult[1]
 
-    const page = parseInt(pageWord)
-    if (page < 1) {
-      throw new coreErrors.CommandListError("Wrong page input")
-    }
-
-    const connection = isRelease ? await defaultConnection() : await sshConnection()
     const list = await dbFunctions.fetchWordsList(connection, page)
     const listString = list.map(x => x.title).join(", ")
     
@@ -124,8 +143,6 @@ async function assembleList(chatId, text) {
 
 async function assembleQuiz(chatId) {
   try {
-    // Соединяемся с БД
-    const connection = isRelease ? await defaultConnection() : await sshConnection()
     // Вытаскиваем 4 случайны записи из БД
     const words = await dbFunctions.fetchRandomWords(connection, 4)
 
@@ -153,22 +170,16 @@ async function assembleQuiz(chatId) {
 
 async function assemblePost(chatId, word) {
   try {
-    if (word.length === 0) {
-      throw new Error("Word is empty")
-    }
-
-    // Соединяемся с БД
-    const connection = isRelease ? await defaultConnection() : await sshConnection()
     // Ищем это слово
     const searchResult = await dbFunctions.fetchFirstWord(connection, word)
 
     // Проверяем результат поиск
     if (searchResult.length === 0) {
-      throw new Error("Search is empty")
+      throw new coreErrors.PostError("not found")
     }
     const postWord = searchResult[0]
     if (postWord.length === 0) {
-      throw new Error("Found word is empty")
+      throw new coreErrors.PostError("not found")
     }
 
     // Формируем пост
@@ -177,6 +188,7 @@ async function assemblePost(chatId, word) {
     // Отсылаем пост в бот
     await sendPostToBot(chatId, postMessage)
   } catch (error) {
+    await bot.telegram.sendMessage(chatId, coreErrors.getErrorDescription(error))
     console.error(error)
   }
 }

@@ -65,3 +65,46 @@ export function fetchWordsList(connection, page) {
     })
   })
 }
+
+export function setChannelFavorite(connection, channelId, wordId) {
+  return new Promise((resolve, reject) => {
+    connection.query(`
+      INSERT INTO user_favorites (chatId, contentId)
+      VALUES ('${channelId}', '${wordId}')
+      ON DUPLICATE KEY UPDATE chatId = chatId
+      `, (error, results) => {
+      if (error) {
+        reject(new DatabaseError(error.sqlMessage))
+      }
+      resolve(results)
+    })
+  })
+}
+
+export function deleteChannelFavorite(connection, channelId, wordId) {
+  return new Promise((resolve, reject) => {
+    connection.query(`
+      DELETE FROM user_favorites
+      WHERE chatId = '${channelId}' AND contentId = '${wordId}'
+      `, (error, results) => {
+      if (error) {
+        reject(new DatabaseError(error.sqlMessage))
+      }
+      resolve(results)
+    })
+  })
+}
+
+export function fetchFavoritesList(connection, channelId, page) {
+  return new Promise((resolve, reject) => {
+    connection.query(`
+      SELECT * FROM user_favorites JOIN content ON contentId = id 
+      WHERE chatId = '${channelId}' LIMIT 10 OFFSET ${(page - 1) * 10}
+      `, (error, results) => {
+      if (error) {
+        reject(new DatabaseError(error.sqlMessage))
+      }
+      resolve(results)
+    })
+  })
+}
