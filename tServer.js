@@ -29,7 +29,7 @@ bot.command('word', async (ctx) => {
   assembleQuiz(ctx.chat.id)
 })
 
-bot.command('wordFavorites', async (ctx) => {
+bot.command('wordfavorites', async (ctx) => {
   assembleFavoritesQuiz(ctx.chat.id)
 })
 
@@ -45,7 +45,7 @@ bot.command('unfavorite', async (ctx) => {
   unfavorite(ctx.chat.id, ctx.message.text)
 })
 
-bot.command('listFavorites', async (ctx) => {
+bot.command('listfavorites', async (ctx) => {
   assembleFavoritesList(ctx.chat.id, ctx.message.text)
 })
 
