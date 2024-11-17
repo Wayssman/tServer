@@ -16,6 +16,18 @@ export class PostError extends Error {
     }
 }
 
+export class FavoriteError extends Error {
+    constructor(args) {
+        super(args)
+    }
+}
+
+export class QuizError extends Error {
+    constructor(args) {
+        super(args)
+    }
+}
+
 export function getErrorDescription(error) {
     switch(true) {
         case error instanceof DatabaseError:
@@ -28,6 +40,12 @@ export function getErrorDescription(error) {
                     return "Ошибка! Ошибка формата ввода команды. Перепроверьте формат. \nФормат: word, где word - нужное слово. Или word togroup для отправки в канал."
                 case "quiz":
                     return "Ошибка! Ошибка формата ввода команды. Перепроверьте формат.\nФормат: /word"
+                case "favoritesList":
+                    return "Ошибка! Ошибка формата ввода команды. Перепроверьте формат.\nФормат: /listFavorites x, где x - номер страницы.\nНа странице умещается 10 слов. Страницы начинаются с 1." 
+                case "favorite":
+                    return "Ошибка! Ошибка формата ввода команды. Перепроверьте формат.\nФормат: /favorite word, где word - слово, которое вы хотите добавить в избранное."
+                case "unfavorite":
+                    return "Ошибка! Ошибка формата ввода команды. Перепроверьте формат.\nФормат: /unfavorite word, где word - слово, которое вы хотите удалить из избранного."
                 default:
                     return "Ошибка! Ошибка формата ввода."
             }
@@ -38,6 +56,15 @@ export function getErrorDescription(error) {
                 default:
                     return "Ошибка! Неизвестная ошибка."
             }
+        case error instanceof FavoriteError:
+            switch (error.message) {
+                case "not found":
+                    return "Ошибка! Не найдено слово в базе."
+                default:
+                    return "Ошибка! Неизвестная ошибка."
+            }
+        case error instanceof QuizError:
+            return "Ошибка! Не удалось сотавить викторину!"
         default:
             return "Ошибка! Неизвестная ошибка."
     }

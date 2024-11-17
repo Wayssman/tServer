@@ -57,7 +57,7 @@ export function fetchWordById(connection, wordId) {
 
 export function fetchWordsList(connection, page) {
   return new Promise((resolve, reject) => {
-    connection.query(`SELECT title FROM content LIMIT 10 OFFSET ${(page - 1) * 10}`, (error, results) => {
+    connection.query(`SELECT title FROM content ORDER BY id LIMIT 10 OFFSET ${(page - 1) * 10}`, (error, results) => {
       if (error) {
         reject(new DatabaseError(error.sqlMessage))
       }
@@ -99,7 +99,21 @@ export function fetchFavoritesList(connection, channelId, page) {
   return new Promise((resolve, reject) => {
     connection.query(`
       SELECT * FROM user_favorites JOIN content ON contentId = id 
-      WHERE chatId = '${channelId}' LIMIT 10 OFFSET ${(page - 1) * 10}
+      WHERE chatId = '${channelId}' ORDER BY id LIMIT 10 OFFSET ${(page - 1) * 10}
+      `, (error, results) => {
+      if (error) {
+        reject(new DatabaseError(error.sqlMessage))
+      }
+      resolve(results)
+    })
+  })
+}
+
+export function fetchRandomFavorites(connection, channelId, limit) {
+  return new Promise((resolve, reject) => {
+    connection.query(`
+      SELECT * FROM user_favorites JOIN content ON contentId = id
+      WHERE chatId = '${channelId}' ORDER BY RAND( ) LIMIT ${limit}
       `, (error, results) => {
       if (error) {
         reject(new DatabaseError(error.sqlMessage))
