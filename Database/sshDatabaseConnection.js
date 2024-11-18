@@ -38,8 +38,10 @@ export function sshConnection() {
                     const database = mysql.createConnection(updateDbServer)
                     database.connect((error) => {
                         if (error) {
+                            console.error(error)
                             reject(error)
                         }
+                        console.log("TEST: new connection!")
                         resolve(database)
                     })
                 })

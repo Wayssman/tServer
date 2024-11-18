@@ -14,12 +14,14 @@ export function defaultConnection() {
         const database = mysql.createConnection(databaseConfig)
         database.connect((error) => {
             if (error) {
+                console.error(error)
                 reject(error)
             }
+            console.log("TEST: new connection!")
             resolve(database)
         })
         database.on('error', function (err) {
-            console.log(err)
+            console.error(err)
         })
     })
 }

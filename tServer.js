@@ -93,6 +93,6 @@ bot.on(message('text'), async (ctx) => {
   }
 })
 
-const job = schedule.scheduleJob('20 14 * * *', function () {
+const job = schedule.scheduleJob('0 10 * * *', function () {
   assembleScheduledPost(channelId)
 })
