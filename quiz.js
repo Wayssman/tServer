@@ -3,6 +3,7 @@ import * as dbFunctions from './Database/databaseRequests.js'
 import * as coreErrors from './Utilities/coreErrors.js'
 import { shuffle } from './Utilities/coreUtilities.js'
 import { makeSafe } from './Utilities/telegramUtilities.js'
+import { openFavorites, openSettings, sendStart, sendMenu, sendFavorites, openMenu, openFavoritesList } from './menu.js'
 
 export async function assembleQuiz(chatId) {
     try {
@@ -53,6 +54,11 @@ export async function assembleFavoritesQuiz(chatId) {
         const message = getQuizMessage("Новое слово дня! Угадаешь ли ты?", mainWord)
         const hint = getHint(mainWord)
         const quizVariants = getQuizVariants(mainWord, words)
+
+        // Проверка на кол-во вариантов
+        if (quizVariants[0].length < 2) {
+            throw new coreErrors.QuizError("less")
+        }
 
         // Отсылаем все в бот
         await bot.telegram.sendMessage(chatId, message, {

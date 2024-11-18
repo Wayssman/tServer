@@ -41,7 +41,7 @@ export function getErrorDescription(error) {
                 case "quiz":
                     return "Ошибка! Ошибка формата ввода команды. Перепроверьте формат.\nФормат: /word"
                 case "favoritesList":
-                    return "Ошибка! Ошибка формата ввода команды. Перепроверьте формат.\nФормат: /listFavorites x, где x - номер страницы.\nНа странице умещается 10 слов. Страницы начинаются с 1." 
+                    return "Ошибка! Ошибка формата ввода команды. Перепроверьте формат.\nФормат: /listfavorites x, где x - номер страницы.\nНа странице умещается 10 слов. Страницы начинаются с 1." 
                 case "favorite":
                     return "Ошибка! Ошибка формата ввода команды. Перепроверьте формат.\nФормат: /favorite word, где word - слово, которое вы хотите добавить в избранное."
                 case "unfavorite":
@@ -64,7 +64,14 @@ export function getErrorDescription(error) {
                     return "Ошибка! Неизвестная ошибка."
             }
         case error instanceof QuizError:
-            return "Ошибка! Не удалось сотавить викторину!"
+            switch (error.message) {
+                case "not found":
+                    return "Ошибка! Не найдено слово в базе."
+                case "less":
+                    return "Ошибка! Кол-во слов для викторины меньше 2х!"
+                default:
+                    return "Ошибка! Не удалось сотавить викторину!"
+            }
         default:
             return "Ошибка! Неизвестная ошибка."
     }
