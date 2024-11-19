@@ -1,8 +1,6 @@
 import { Telegraf } from 'telegraf'
 import { message } from 'telegraf/filters'
 import 'dotenv/config'
-import { sshConnection } from './Database/sshDatabaseConnection.js'
-import { defaultConnection } from './Database/defaultDatabaseConnection.js'
 import schedule from 'node-schedule'
 
 import { handleAdminMessage, assembleScheduledPost } from './post.js'
@@ -12,9 +10,8 @@ import { assembleFavoritesList, favorite, unfavorite } from './favorites.js'
 import { openFavorites, openSettings, sendStart, sendMenu, sendFavorites, openMenu, openFavoritesList } from './menu.js'
 
 // Setup
-const isRelease = (process.env.BUILD === "release")
+export const isRelease = (process.env.BUILD === "release")
 export const bot = new Telegraf(String(isRelease ? process.env.BOT_TOKEN : process.env.DEBUG_BOT_TOKEN))
-export const connection = isRelease ? await defaultConnection() : await sshConnection()
 export const channelId = isRelease ? process.env.TELEGRAM_CHANNEL_ID : process.env.TELEGRAM_ADMIN_CHAT_ID
 
 // Launch Bot

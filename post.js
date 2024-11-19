@@ -1,4 +1,4 @@
-import { bot, connection, channelId } from './tServer.js'
+import { bot, channelId } from './tServer.js'
 import * as dbFunctions from './Database/databaseRequests.js'
 import * as coreErrors from './Utilities/coreErrors.js'
 import { getWordArgument } from './Utilities/coreUtilities.js'
@@ -27,7 +27,7 @@ export async function handleAdminMessage(chatId, text) {
 async function assemblePost(chatId, word) {
     try {
         // Ищем это слово
-        const searchResult = await dbFunctions.fetchFirstWord(connection, word)
+        const searchResult = await dbFunctions.fetchFirstWord(word)
 
         // Проверяем результат поиск
         if (searchResult.length === 0) {
@@ -63,14 +63,14 @@ function getPostMessage(word) {
 export async function assembleScheduledPost(chatId) {
     try {
       // Вытаскиваем счетчик
-      const counter = await dbFunctions.fetchChannelCounter(connection, chatId)
+      const counter = await dbFunctions.fetchChannelCounter(chatId)
       if (counter.length === 0) {
         throw new Error("Can't fetch channel counter")
       }
   
       // По id из счетчика вытаскиваем слово
       const wordId = counter[0].id
-      const searchResult = await dbFunctions.fetchWordById(connection, wordId)
+      const searchResult = await dbFunctions.fetchWordById(wordId)
       if (searchResult.length === 0) {
         throw new Error("Reached the end of the Database")
       }
@@ -87,7 +87,7 @@ export async function assembleScheduledPost(chatId) {
         parse_mode: "MarkdownV2"
     })
   
-      dbFunctions.setChannelCounter(connection, chatId, wordId + 1)
+      dbFunctions.setChannelCounter(chatId, wordId + 1)
     } catch (error) {
       console.error(error)
     }

@@ -1,4 +1,4 @@
-import { bot, connection } from './tServer.js'
+import { bot } from './tServer.js'
 import * as dbFunctions from './Database/databaseRequests.js'
 import * as coreErrors from './Utilities/coreErrors.js'
 import { shuffle } from './Utilities/coreUtilities.js'
@@ -8,7 +8,7 @@ import { openFavorites, openSettings, sendStart, sendMenu, sendFavorites, openMe
 export async function assembleQuiz(chatId) {
     try {
         // Вытаскиваем 4 случайны записи из БД
-        const words = await dbFunctions.fetchRandomWords(connection, 4)
+        const words = await dbFunctions.fetchRandomWords(4)
 
         // Проверка на пустой список
         if (words.length < 1) {
@@ -40,7 +40,7 @@ export async function assembleQuiz(chatId) {
 export async function assembleFavoritesQuiz(chatId) {
     try {
         // Вытаскиваем 4 случайны записи из БД
-        const words = await dbFunctions.fetchRandomFavorites(connection, chatId, 4)
+        const words = await dbFunctions.fetchRandomFavorites(chatId, 4)
 
         // Проверка на пустой список
         if (words.length < 1) {
