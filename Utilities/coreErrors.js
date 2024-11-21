@@ -70,7 +70,7 @@ export function getErrorDescription(error) {
                 case "less":
                     return "Ошибка! Кол-во слов для викторины меньше 2х!"
                 default:
-                    return "Ошибка! Не удалось сотавить викторину!"
+                    return "Ошибка! Не удалось составить викторину!"
             }
         default:
             return "Ошибка! Неизвестная ошибка."

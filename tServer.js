@@ -8,7 +8,7 @@ import { handleAdminMessage, assembleScheduledPost } from './post.js'
 import { assembleQuiz, assembleFavoritesQuiz } from './quiz.js'
 import { assembleList } from './list.js'
 import { assembleFavoritesList, favorite, unfavorite } from './favorites.js'
-import { openFavorites, sendStart, sendMenu, sendFavorites, openMenu, openFavoritesList } from './menu.js'
+import { openFavorites, sendStart, sendMenu, sendFavorites, openMenu, openFavoritesList, sendFavoritesList } from './menu.js'
 import { pool } from './Database/defaultDatabaseConnection.js'
 
 // Setup
@@ -116,9 +116,11 @@ bot.on(message('text'), async (ctx) => {
   switch (replyMessageId) {
     case favoriteMessageId:
       await favorite(ctx.chat.id, "/favorite " + ctx.message.text)
+      await sendFavoritesList(ctx)
       break
     case unfavoriteMessageId:
       await unfavorite(ctx.chat.id, "/unfavorite " + ctx.message.text)
+      await sendFavoritesList(ctx)
       break
     case "NoReply":
       // Распознаем сообщения только от админа

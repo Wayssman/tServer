@@ -40,7 +40,6 @@ export function sendStart(ctx) {
 
 export async function sendMenu(ctx) {
     try {
-        await ctx.answerCbQuery()
         await ctx.sendMessage(
             menuTitle,
             { 
@@ -55,13 +54,26 @@ export async function sendMenu(ctx) {
 
 export async function sendFavorites(ctx) {
     try {
-        await ctx.answerCbQuery()
         await ctx.sendMessage(
-            'Избранное:',
+            favoritesTitle,
             favoritesButtons
         )
     } catch {
 
+    }
+}
+
+export async function sendFavoritesList(ctx) {
+    try {
+        await ctx.sendMessage(
+            favoriteListTitle,
+            {
+                parse_mode: "MarkdownV2",
+                reply_markup: favoritesListButtons.reply_markup
+            }
+        )
+    } catch {
+        console.log(error)
     }
 }
 
