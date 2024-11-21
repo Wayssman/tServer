@@ -1,29 +1,31 @@
 import { Markup } from 'telegraf'
 
-const menuTitle = "*Нажми*"
+const menuTitle = "*Нажимай и повторяй слова*"
+const favoritesTitle = "Повторяй слова из избранного"
+const favoriteListTitle = "Твои избранные слова:"
 const menuButtons = Markup.inlineKeyboard([
-    [Markup.button.callback('Угадай случайное слово!', 'word')],
+    [Markup.button.callback('Угадать случайное слово!', 'word')],
     [Markup.button.callback('Избранное', 'tofavorites')/*, Markup.button.callback('Настройки', 'tosettings')*/]
 ])
 
 const favoritesButtons = Markup.inlineKeyboard([
-    [Markup.button.callback('Избранное. Угадай случайное слово!', 'wordfavorites')],
-    [Markup.button.callback('Список', 'tofavoriteslist'), Markup.button.callback('Меню', 'tomenu')]
+    [Markup.button.callback('Угадать слово в избранном!', 'wordfavorites')],
+    [Markup.button.callback('Список', 'tofavoriteslist'), Markup.button.callback('Назад', 'tomenu')]
 ])
 
 const favoritesListButtons = Markup.inlineKeyboard([
     [
-        Markup.button.callback('1', 'listfavorites 1'), 
-        Markup.button.callback('2', 'listfavorites 2'), 
-        Markup.button.callback('3', 'listfavorites 3'), 
-        Markup.button.callback('4', 'listfavorites 4'), 
-        Markup.button.callback('5', 'listfavorites 5')
+        Markup.button.callback('Стр. 1', 'listfavorites 1'), 
+        Markup.button.callback('Стр. 2', 'listfavorites 2'), 
+        Markup.button.callback('Стр. 3', 'listfavorites 3'), 
+        Markup.button.callback('Стр. 4', 'listfavorites 4'), 
+        Markup.button.callback('Стр. 5', 'listfavorites 5')
     ],
-    [Markup.button.callback('Избранное', 'tofavorites')]
-])
-
-const settingsButtons = Markup.inlineKeyboard([
-    Markup.button.callback('Меню', 'tomenu')
+    [
+        Markup.button.callback('Добавить слово', 'favorite'), 
+        Markup.button.callback('Удалить слово', 'unfavorite'), 
+    ],
+    [Markup.button.callback('Назад', 'tofavorites')]
 ])
 
 export function sendStart(ctx) {
@@ -82,8 +84,11 @@ export async function openFavorites(ctx) {
     try {
         await ctx.answerCbQuery()
         await ctx.editMessageText(
-            'Избранное:',
-            favoritesButtons
+            favoritesTitle,
+            {
+                parse_mode: "MarkdownV2",
+                reply_markup: favoritesButtons.reply_markup
+            }
         )
     } catch {
 
@@ -94,20 +99,11 @@ export async function openFavoritesList(ctx) {
     try {
         await ctx.answerCbQuery()
         await ctx.editMessageText(
-            'Избранное. Список:',
-            favoritesListButtons
-        )
-    } catch {
-
-    }
-}
-
-export async function openSettings(ctx) {
-    try {
-        await ctx.answerCbQuery()
-        await ctx.editMessageText(
-            'Настройки:',
-            settingsButtons
+            favoriteListTitle,
+            {
+                parse_mode: "MarkdownV2",
+                reply_markup: favoritesListButtons.reply_markup
+            }
         )
     } catch {
 

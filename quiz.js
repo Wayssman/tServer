@@ -3,7 +3,6 @@ import * as dbFunctions from './Database/databaseRequests.js'
 import * as coreErrors from './Utilities/coreErrors.js'
 import { shuffle } from './Utilities/coreUtilities.js'
 import { makeSafe } from './Utilities/telegramUtilities.js'
-import { openFavorites, openSettings, sendStart, sendMenu, sendFavorites, openMenu, openFavoritesList } from './menu.js'
 
 export async function assembleQuiz(chatId) {
     try {
