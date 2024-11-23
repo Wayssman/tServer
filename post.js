@@ -59,11 +59,12 @@ async function assemblePost(chatId, word) {
 
 function getPostMessage(word) {
     const headerMessage = "📭 *Новое слово на сегодня:* \n\n"
-    const titleMessage = `*${makeSafe(`📚 ${word.title.toUpperCase()} 📚`)}* \n\n`
-    const postMessage = makeSafe(word.message)
+    const titleMessage = `*${makeSafe(`📚 ${word.title.toUpperCase()} 📚`)}*` + "\n\n"
+    const postMessage = makeSafe(word.message) + "\n\n"
+    const accentMessage = `✏️ *${makeSafe(word.accent)}*`
     const imageMessage = `[\u200B](${word.image})`
 
-    const fullMessage = headerMessage + titleMessage + postMessage + imageMessage
+    const fullMessage = headerMessage + titleMessage + postMessage + accentMessage + imageMessage
     return fullMessage
 }
 
