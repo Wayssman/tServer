@@ -73,6 +73,30 @@ export async function assembleFavoritesQuiz(chatId) {
     }
 }
 
+export async function getQuizForWord(chatId, word) {
+    try {
+        // Вытаскиваем 3 случайных записи из БД
+        var words = await dbFunctions.fetchRandomWordsWithout(3, word.title)
+
+        // Проверка на пустой список
+        if (words.length < 1) {
+            throw new coreErrors.QuizError("empty")
+        }
+
+        // Зададим первое слово из списка, как главное
+        const mainWord = word
+        words.push(mainWord)
+
+        // Формируем викторину
+        const hint = getHint(mainWord)
+        const quizVariants = getQuizVariants(mainWord, words)
+        return [hint, quizVariants]
+    } catch (error) {
+        await bot.telegram.sendMessage(chatId, coreErrors.getErrorDescription(error))
+        console.error(error)
+    }
+}
+
 function getQuizMessage(title, word) {
     const titleMessage = `*${makeSafe(`${title}`)}* \n\n`
     const postMessage = makeSafe(word.message)

@@ -14,10 +14,36 @@ export async function fetchRandomWords(limit) {
   })
 }
 
+export async function fetchRandomWordsWithout(limit, word) {
+  const connection = await defaultConnection()
+  return new Promise((resolve, reject) => {
+    connection.query(`SELECT * FROM content WHERE not(LOWER(title) = '${word.toLowerCase()}') ORDER BY RAND( ) LIMIT ${limit}`, (error, results) => {
+      connection.release()
+      if (error) {
+        reject(new DatabaseError(error.sqlMessage))
+      }
+      resolve(results)
+    })
+  })
+}
+
 export async function fetchFirstWord(word) {
   const connection = await defaultConnection()
   return new Promise((resolve, reject) => {
     connection.query(`SELECT * FROM content WHERE LOWER(title) = '${word.toLowerCase()}' LIMIT 1`, (error, results) => {
+      connection.release()
+      if (error) {
+        reject(new DatabaseError(error.sqlMessage))
+      }
+      resolve(results)
+    })
+  })
+}
+
+export async function fetchWordById(wordId) {
+  const connection = await defaultConnection()
+  return new Promise((resolve, reject) => {
+    connection.query(`SELECT * FROM content WHERE id = '${wordId}' LIMIT 1`, (error, results) => {
       connection.release()
       if (error) {
         reject(new DatabaseError(error.sqlMessage))
@@ -44,19 +70,6 @@ export async function setChannelCounter(channelId, newId) {
   const connection = await defaultConnection()
   return new Promise((resolve, reject) => {
     connection.query(`UPDATE channels_data SET id = ${newId} WHERE channelId = '${channelId}'`, (error, results) => {
-      connection.release()
-      if (error) {
-        reject(new DatabaseError(error.sqlMessage))
-      }
-      resolve(results)
-    })
-  })
-}
-
-export async function fetchWordById(wordId) {
-  const connection = await defaultConnection()
-  return new Promise((resolve, reject) => {
-    connection.query(`SELECT * FROM content WHERE id = '${wordId}' LIMIT 1`, (error, results) => {
       connection.release()
       if (error) {
         reject(new DatabaseError(error.sqlMessage))

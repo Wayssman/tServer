@@ -4,6 +4,7 @@ import * as coreErrors from './Utilities/coreErrors.js'
 import { getWordArgument } from './Utilities/coreUtilities.js'
 import { makeSafe } from './Utilities/telegramUtilities.js'
 import { Markup } from 'telegraf'
+import { getQuizForWord } from './quiz.js'
 
 const postFooterButtons = Markup.inlineKeyboard([
     [Markup.button.url('Повторяй слова в боте!', 'https://t.me/QuizMasterskaya_bot')]
@@ -45,11 +46,18 @@ async function assemblePost(chatId, word) {
 
         // Формируем пост
         const postMessage = getPostMessage(postWord)
+        const quizData = await getQuizForWord(chatId, postWord)
+        const hint = quizData[0]
+        const quizVariants = quizData[1]
 
         // Отсылаем пост в бот
         await bot.telegram.sendMessage(chatId, postMessage, {
             parse_mode: "MarkdownV2",
             reply_markup: postFooterButtons.reply_markup
+        })
+        await bot.telegram.sendQuiz(chatId, "Какое это слово?", quizVariants[0], {
+            correct_option_id: quizVariants[1],
+            explanation: hint
         })
     } catch (error) {
         await bot.telegram.sendMessage(chatId, coreErrors.getErrorDescription(error))
@@ -59,45 +67,50 @@ async function assemblePost(chatId, word) {
 
 function getPostMessage(word) {
     const headerMessage = "📭 *Новое слово на сегодня:* \n\n"
-    const titleMessage = `*${makeSafe(`📚 ${word.title.toUpperCase()} 📚`)}*` + "\n\n"
-    const postMessage = makeSafe(word.message) + "\n\n"
-    const accentMessage = `✏️ *${makeSafe(word.accent)}*`
+    const postMessage = makeSafe(word.message)
     const imageMessage = `[\u200B](${word.image})`
 
-    const fullMessage = headerMessage + titleMessage + postMessage + accentMessage + imageMessage
+    const fullMessage = headerMessage + postMessage + imageMessage
     return fullMessage
 }
 
 export async function assembleScheduledPost(chatId) {
     try {
-      // Вытаскиваем счетчик
-      const counter = await dbFunctions.fetchChannelCounter(chatId)
-      if (counter.length === 0) {
-        throw new Error("Can't fetch channel counter")
-      }
-  
-      // По id из счетчика вытаскиваем слово
-      const wordId = counter[0].id
-      const searchResult = await dbFunctions.fetchWordById(wordId)
-      if (searchResult.length === 0) {
-        throw new Error("Reached the end of the Database")
-      }
-      const postWord = searchResult[0]
-      if (postWord.length === 0) {
-        throw new Error("Found word is empty")
-      }
-  
-      // Формируем пост
-      const postMessage = getPostMessage(postWord)
-  
-      // Отсылаем пост в бот
-      await bot.telegram.sendMessage(chatId, postMessage, {
-        parse_mode: "MarkdownV2",
-        reply_markup: postFooterButtons.reply_markup
-    })
-  
-      dbFunctions.setChannelCounter(chatId, wordId + 1)
+        // Вытаскиваем счетчик
+        const counter = await dbFunctions.fetchChannelCounter(chatId)
+        if (counter.length === 0) {
+            throw new Error("Can't fetch channel counter")
+        }
+
+        // По id из счетчика вытаскиваем слово
+        const wordId = counter[0].id
+        const searchResult = await dbFunctions.fetchWordById(wordId)
+        if (searchResult.length === 0) {
+            throw new Error("Reached the end of the Database")
+        }
+        const postWord = searchResult[0]
+        if (postWord.length === 0) {
+            throw new Error("Found word is empty")
+        }
+
+        // Формируем пост
+        const postMessage = getPostMessage(postWord)
+        const quizData = await getQuizForWord(chatId, postWord)
+        const hint = quizData[0]
+        const quizVariants = quizData[1]
+
+        // Отсылаем пост в бот
+        await bot.telegram.sendMessage(chatId, postMessage, {
+            parse_mode: "MarkdownV2",
+            reply_markup: postFooterButtons.reply_markup
+        })
+        await bot.telegram.sendQuiz(chatId, "Какое это слово?", quizVariants[0], {
+            correct_option_id: quizVariants[1],
+            explanation: hint
+        })
+
+        dbFunctions.setChannelCounter(chatId, wordId + 1)
     } catch (error) {
-      console.error(error)
+        console.error(error)
     }
-  }
+}
