@@ -20,30 +20,16 @@ export function shuffle(array) {
     }
 }
 
-export function getWordArgument(text, commandTag) {
+export function getArguments(text, commandTag) {
     const words = text.split(" ")
     if (words.length === 0) {
         throw new ArgumentParseError(commandTag)
     }
     const word = words[0]
-    const argument = words[1]
+    const argument1 = words[1]
+    const argument2 = words[2]
     if (word.length === 0) {
         throw new ArgumentParseError(commandTag)
     }
-    return [word, argument]
-}
-
-export function getNumberArgument(text, commandTag) {
-    const result = getWordArgument(text, commandTag)
-    const word = result[0]
-    const pageWord = result[1]
-
-    const page = parseInt(pageWord, 10)
-    if (isNaN(page)) {
-        throw new ArgumentParseError(commandTag)
-    }
-    if (page < 1) {
-        throw new ArgumentParseError(commandTag)
-    }
-    return [word, page]
+    return [word, argument1, argument2]
 }

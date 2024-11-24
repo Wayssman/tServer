@@ -1,4 +1,4 @@
-import { bot } from './tServer.js'
+import { bot } from '../../tServer.js'
 import * as dbFunctions from './Database/databaseRequests.js'
 import * as coreErrors from './Utilities/coreErrors.js'
 import { getNumberArgument } from './Utilities/coreUtilities.js'

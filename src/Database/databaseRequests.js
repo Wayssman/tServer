@@ -4,7 +4,7 @@ import { DatabaseError } from '../Utilities/coreErrors.js'
 export async function fetchRandomWords(limit) {
   const connection = await defaultConnection()
   return new Promise((resolve, reject) => {
-    connection.query(`SELECT * FROM content ORDER BY RAND( ) LIMIT ${limit}`, (error, results) => {
+    connection.query(`SELECT * FROM words ORDER BY RAND( ) LIMIT ${limit}`, (error, results) => {
       connection.release()
       if (error) {
         reject(new DatabaseError(error.sqlMessage))
@@ -17,7 +17,7 @@ export async function fetchRandomWords(limit) {
 export async function fetchRandomWordsWithout(limit, word) {
   const connection = await defaultConnection()
   return new Promise((resolve, reject) => {
-    connection.query(`SELECT * FROM content WHERE not(LOWER(title) = '${word.toLowerCase()}') ORDER BY RAND( ) LIMIT ${limit}`, (error, results) => {
+    connection.query(`SELECT * FROM words WHERE not(LOWER(title) = '${word.toLowerCase()}') ORDER BY RAND( ) LIMIT ${limit}`, (error, results) => {
       connection.release()
       if (error) {
         reject(new DatabaseError(error.sqlMessage))
@@ -30,7 +30,7 @@ export async function fetchRandomWordsWithout(limit, word) {
 export async function fetchFirstWord(word) {
   const connection = await defaultConnection()
   return new Promise((resolve, reject) => {
-    connection.query(`SELECT * FROM content WHERE LOWER(title) = '${word.toLowerCase()}' LIMIT 1`, (error, results) => {
+    connection.query(`SELECT * FROM words WHERE LOWER(title) = '${word.toLowerCase()}' LIMIT 1`, (error, results) => {
       connection.release()
       if (error) {
         reject(new DatabaseError(error.sqlMessage))
@@ -43,7 +43,20 @@ export async function fetchFirstWord(word) {
 export async function fetchWordById(wordId) {
   const connection = await defaultConnection()
   return new Promise((resolve, reject) => {
-    connection.query(`SELECT * FROM content WHERE id = '${wordId}' LIMIT 1`, (error, results) => {
+    connection.query(`SELECT * FROM words WHERE id = '${wordId}' LIMIT 1`, (error, results) => {
+      connection.release()
+      if (error) {
+        reject(new DatabaseError(error.sqlMessage))
+      }
+      resolve(results)
+    })
+  })
+}
+
+export async function fetchFactById(factId) {
+  const connection = await defaultConnection()
+  return new Promise((resolve, reject) => {
+    connection.query(`SELECT * FROM facts WHERE id = '${factId}' LIMIT 1`, (error, results) => {
       connection.release()
       if (error) {
         reject(new DatabaseError(error.sqlMessage))
@@ -66,10 +79,23 @@ export async function fetchChannelCounter(channelId) {
   })
 }
 
-export async function setChannelCounter(channelId, newId) {
+export async function setWordChannelCounter(channelId, newId) {
   const connection = await defaultConnection()
   return new Promise((resolve, reject) => {
-    connection.query(`UPDATE channels_data SET id = ${newId} WHERE channelId = '${channelId}'`, (error, results) => {
+    connection.query(`UPDATE channels_data SET wordId = ${newId} WHERE channelId = '${channelId}'`, (error, results) => {
+      connection.release()
+      if (error) {
+        reject(new DatabaseError(error.sqlMessage))
+      }
+      resolve(results)
+    })
+  })
+}
+
+export async function setFactChannelCounter(channelId, newId) {
+  const connection = await defaultConnection()
+  return new Promise((resolve, reject) => {
+    connection.query(`UPDATE channels_data SET factId = ${newId} WHERE channelId = '${channelId}'`, (error, results) => {
       connection.release()
       if (error) {
         reject(new DatabaseError(error.sqlMessage))
@@ -82,7 +108,7 @@ export async function setChannelCounter(channelId, newId) {
 export async function fetchWordsList(page) {
   const connection = await defaultConnection()
   return new Promise((resolve, reject) => {
-    connection.query(`SELECT title FROM content ORDER BY id LIMIT 10 OFFSET ${(page - 1) * 10}`, (error, results) => {
+    connection.query(`SELECT title FROM words ORDER BY id LIMIT 10 OFFSET ${(page - 1) * 10}`, (error, results) => {
       connection.release()
       if (error) {
         reject(new DatabaseError(error.sqlMessage))
