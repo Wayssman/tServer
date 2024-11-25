@@ -10,6 +10,7 @@ import { pool } from './src/Database/defaultDatabaseConnection.js'
 import { assembleFactScheduledPost, assembleFactRandomPost } from './src/Builders/factquiz.js'
 import { assembleBotPost } from './src/Builders/botpost.js'
 import { openMenu, sendAgainFact, sendAgainWord, sendMenu } from './src/Handlers/menu.js'
+import { handleButtonAction } from './src/Handlers/answers.js'
 
 // Setup
 export const isRelease = (process.env.BUILD === "release")
@@ -28,14 +29,7 @@ process.once('SIGTERM', () => bot.stop('SIGTERM'))
 
 // Действия кнопок
 bot.action(/variant,+/, async (ctx) => {
-  const data = ctx.callbackQuery.data
-  const parsed = data.split(",")
-  const variantIndex = parsed[1]
-  const rightVariantIndex = parsed[2]
-
-  ctx.answerCbQuery(variantIndex === rightVariantIndex ? "Верно!" : "Не угадал. Попробуй еще раз!", {
-    show_alert: true
-  })
+  handleButtonAction(ctx)
 })
 
 bot.action('word', async (ctx) => {

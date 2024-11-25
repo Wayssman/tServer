@@ -104,7 +104,7 @@ async function sendWordPost(chatId, postWord) {
 }
 
 function getPostMessage(word) {
-    const headerMessage = "📭 *Новое слово на сегодня:* \n\n"
+    const headerMessage = "📚 *Новое слово на сегодня:* \n\n"
     const postMessage = makeSafe(word.message)
     const imageMessage = `[\u200B](${word.image})`
 

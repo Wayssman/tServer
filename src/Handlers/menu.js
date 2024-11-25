@@ -3,22 +3,22 @@ import { makeSafe } from '../Utilities/telegramUtilities.js'
 
 const menuTitle = `*${makeSafe("Нажимай и угадывай!")}*`
 const menuButtons = Markup.inlineKeyboard([
-    [Markup.button.callback('Угадать случайное слово!', 'word')],
-    [Markup.button.callback('Угадать случайный факт!', 'fact')]
+    [Markup.button.callback('📚 Угадать случайное слово!', 'word')],
+    [Markup.button.callback('💭 Угадать случайный факт!', 'fact')]
 ])
 
 const againTitle = `*${makeSafe("Понравилось?")}*`
 const againWordButtons = Markup.inlineKeyboard([
     [
-    Markup.button.callback('Играть ещё!', 'word'),
-    Markup.button.callback('В меню', 'tomenu')
+    Markup.button.callback('♻️ Играть ещё!', 'word'),
+    Markup.button.callback('🏠 В меню', 'tomenu')
     ]
 ])
 
 const againFactButtons = Markup.inlineKeyboard([
     [
-    Markup.button.callback('Играть ещё!', 'fact'),
-    Markup.button.callback('В меню', 'tomenu')
+    Markup.button.callback('♻️ Играть ещё!', 'fact'),
+    Markup.button.callback('🏠 В меню', 'tomenu')
     ]
 ])
 
