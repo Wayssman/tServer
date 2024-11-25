@@ -1,10 +1,24 @@
 import { defaultConnection } from './defaultDatabaseConnection.js'
 import { DatabaseError } from '../Utilities/coreErrors.js'
 
+// Fetch random words/facts
 export async function fetchRandomWords(limit) {
   const connection = await defaultConnection()
   return new Promise((resolve, reject) => {
     connection.query(`SELECT * FROM words ORDER BY RAND( ) LIMIT ${limit}`, (error, results) => {
+      connection.release()
+      if (error) {
+        reject(new DatabaseError(error.sqlMessage))
+      }
+      resolve(results)
+    })
+  })
+}
+
+export async function fetchRandomFacts(limit) {
+  const connection = await defaultConnection()
+  return new Promise((resolve, reject) => {
+    connection.query(`SELECT * FROM facts ORDER BY RAND( ) LIMIT ${limit}`, (error, results) => {
       connection.release()
       if (error) {
         reject(new DatabaseError(error.sqlMessage))

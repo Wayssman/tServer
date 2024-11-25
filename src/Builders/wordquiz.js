@@ -52,6 +52,27 @@ export async function assembleWordScheduledPost(chatId) {
     }
 }
 
+export async function assembleWordRandomPost(chatId) {
+    try {
+        // Ищем случайное слово
+        const searchResult = await dbFunctions.fetchRandomWords(1)
+
+        // Проверяем результат поиск
+        if (searchResult.length === 0) {
+            throw new coreErrors.PostError("not found")
+        }
+        const postWord = searchResult[0]
+        if (postWord.length === 0) {
+            throw new coreErrors.PostError("not found")
+        }
+
+        await sendWordPost(chatId, postWord)
+    } catch (error) {
+        await bot.telegram.sendMessage(chatId, coreErrors.getErrorDescription(error))
+        console.error(error)
+    }
+}
+
 async function sendWordPost(chatId, postWord) {
     try {
         // Формируем пост

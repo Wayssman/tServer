@@ -3,6 +3,7 @@ import * as coreErrors from '../Utilities/coreErrors.js'
 import { getArguments } from '../Utilities/coreUtilities.js'
 import { assembleWordQuizPost } from '../Builders/wordquiz.js'
 import { assembleFactQuizPost } from '../Builders/factquiz.js'
+import { assembleBotPost } from '../Builders/botpost.js'
 
 
 export async function handleAdminMessage(chatId, text) {
@@ -18,6 +19,8 @@ export async function handleAdminMessage(chatId, text) {
             await assembleWordQuizPost(decidedChatId, base)
         } else if (argument1 === process.env.COMMAND_FACT) {
             await assembleFactQuizPost(decidedChatId, base)
+        } else if (base === process.env.COMMAND_BOT) {
+            await assembleBotPost(decidedChatId)
         }
     } catch (error) {
         await bot.telegram.sendMessage(chatId, coreErrors.getErrorDescription(error))

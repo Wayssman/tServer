@@ -53,6 +53,27 @@ export async function assembleFactScheduledPost(chatId) {
     }
 }
 
+export async function assembleFactRandomPost(chatId) {
+    try {
+        // Ищем факт
+        const searchResult = await dbFunctions.fetchRandomFacts(1)
+
+        // Проверяем результаты поиска
+        if (searchResult.length === 0) {
+            throw new coreErrors.PostError("not found")
+        }
+        const postFact = searchResult[0]
+        if (postFact.length === 0) {
+            throw new coreErrors.PostError("not found")
+        }
+
+        sendFactPost(chatId, postFact)
+    } catch (error) {
+        await bot.telegram.sendMessage(chatId, coreErrors.getErrorDescription(error))
+        console.error(error)
+    }
+}
+
 async function sendFactPost(chatId, postFact) {
     try {
         // Формируем квиз
