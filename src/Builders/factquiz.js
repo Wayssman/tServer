@@ -18,7 +18,7 @@ export async function assembleFactQuizPost(chatId, factId) {
             throw new coreErrors.PostError("not found")
         }
 
-        sendFactPost(chatId, postFact)
+        await sendFactPost(chatId, postFact)
     } catch (error) {
         await bot.telegram.sendMessage(chatId, coreErrors.getErrorDescription(error))
         console.error(error)
@@ -46,7 +46,7 @@ export async function assembleFactScheduledPost(chatId) {
             throw new coreErrors.PostError("not found")
         }
 
-        sendFactPost(chatId, postFact)
+        await sendFactPost(chatId, postFact)
         dbFunctions.setFactChannelCounter(chatId, factId + 1)
     } catch (error) {
         console.error(error)
@@ -67,7 +67,7 @@ export async function assembleFactRandomPost(chatId) {
             throw new coreErrors.PostError("not found")
         }
 
-        sendFactPost(chatId, postFact)
+        await sendFactPost(chatId, postFact)
     } catch (error) {
         await bot.telegram.sendMessage(chatId, coreErrors.getErrorDescription(error))
         console.error(error)
