@@ -82,6 +82,6 @@ const factPost = schedule.scheduleJob('0 18 * * *', function() {
   assembleFactScheduledPost(channelId)
 })
 
-const botPost = schedule.scheduleJob('0 22 * * *', function() {
+const botPost = schedule.scheduleJob('0 22 */2 * *', function() {
   assembleBotPost(channelId)
 })
