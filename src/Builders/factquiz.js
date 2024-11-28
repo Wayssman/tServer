@@ -80,9 +80,10 @@ async function sendFactPost(chatId, postFact) {
         const quizVariants = getFactQuizVarinats(postFact)
         const variants = quizVariants[0]
         const rightVariantIndex = quizVariants[1]
+        const category = postFact.category + "\n\n"
 
         // Отсылаем квиз в бот
-        await bot.telegram.sendQuiz(chatId, "❓ " + postFact.question, variants, {
+        await bot.telegram.sendQuiz(chatId, category + postFact.question, variants, {
             correct_option_id: rightVariantIndex,
             explanation: variants[rightVariantIndex]
         })
