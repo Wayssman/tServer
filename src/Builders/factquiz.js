@@ -2,7 +2,6 @@ import { bot } from '../../tServer.js'
 import * as dbFunctions from '../Database/databaseRequests.js'
 import * as coreErrors from '../Utilities/coreErrors.js'
 import { shuffle } from '../Utilities/coreUtilities.js'
-import { makeSafe } from '../Utilities/telegramUtilities.js'
 
 export async function assembleFactQuizPost(chatId, factId) {
     try {

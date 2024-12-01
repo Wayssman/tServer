@@ -5,6 +5,8 @@ import * as coreErrors from '../Utilities/coreErrors.js'
 import { shuffle } from '../Utilities/coreUtilities.js'
 import { makeSafe } from '../Utilities/telegramUtilities.js'
 
+const wordQuizHashtags = "#квиз #тесты #словарныйзапас"
+
 export async function assembleWordQuizPost(chatId, word) {
     try {
         // Ищем это слово
@@ -105,10 +107,11 @@ async function sendWordPost(chatId, postWord) {
 
 function getPostMessage(word) {
     const headerMessage = "📚 *Новое слово на сегодня:* \n\n"
-    const postMessage = makeSafe(word.message)
+    const postMessage = makeSafe(word.message) + "\n\n"
+    const safeHashtags = makeSafe(wordQuizHashtags)
     const imageMessage = `[\u200B](${word.image})`
 
-    const fullMessage = headerMessage + postMessage + imageMessage
+    const fullMessage = headerMessage + postMessage + safeHashtags + imageMessage
     return fullMessage
 }
 
