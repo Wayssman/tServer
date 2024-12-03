@@ -36,6 +36,7 @@ async function makeRightAnswerMessage(ctx, wordId) {
       throw new Error("Found word is empty")
     }
 
+    console.log("Got!")
     await sendRightAnswerMessage(ctx, getWordRightMessage(postWord))
   } catch (error) {
     console.error(error)
@@ -44,7 +45,6 @@ async function makeRightAnswerMessage(ctx, wordId) {
 }
 
 async function sendRightAnswerMessage(ctx, message) {
-  ctx.answerCbQuery()
   await ctx.answerCbQuery(message, {
     show_alert: true, 
   })
