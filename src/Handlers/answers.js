@@ -36,7 +36,6 @@ async function makeRightAnswerMessage(ctx, wordId) {
       throw new Error("Found word is empty")
     }
 
-    console.log("Got!")
     await sendRightAnswerMessage(ctx, getWordRightMessage(postWord))
   } catch (error) {
     console.error(error)
@@ -51,15 +50,23 @@ async function sendRightAnswerMessage(ctx, message) {
 }
 
 async function sendWrongAnswerMessage(ctx) {
-  await ctx.answerCbQuery(wrongAnswerText, {
-    show_alert: true
-  })
+  try {
+    await ctx.answerCbQuery(wrongAnswerText, {
+      show_alert: true
+    })
+  } catch {
+
+  }
 }
 
 async function sendErrorMessage(ctx) {
-  await ctx.answerCbQuery(errorMessageText, {
-    show_alert: true
-  })
+  try {
+    await ctx.answerCbQuery(errorMessageText, {
+      show_alert: true
+    })
+  } catch {
+    
+  }
 }
 
 function getWordRightMessage(word) {
