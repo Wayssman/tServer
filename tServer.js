@@ -29,7 +29,7 @@ process.once('SIGTERM', () => bot.stop('SIGTERM'))
 
 // Действия кнопок
 bot.action(/variant,+/, async (ctx) => {
-  handleButtonAction(ctx)
+  await handleButtonAction(ctx)
 })
 
 bot.action('word', async (ctx) => {
@@ -82,6 +82,6 @@ const factPost = schedule.scheduleJob('0 18 * * *', function() {
   assembleFactScheduledPost(channelId)
 })
 
-const botPost = schedule.scheduleJob('0 22 */2 * *', function() {
+const botPost = schedule.scheduleJob('0 22 */3 * *', function() {
   assembleBotPost(channelId)
 })

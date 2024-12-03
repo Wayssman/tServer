@@ -87,7 +87,7 @@ async function sendWordPost(chatId, postWord) {
         var buttonsFirstLine = []
         var buttonsSecondLine = []
         for (var index = 0; index < variants.length; index++) {
-            const button = Markup.button.callback(`${variants[index]}`, `variant,${index},${rightVariantIndex},false`)
+            const button = Markup.button.callback(`${variants[index]}`, `variant,${index},${rightVariantIndex},false,${postWord.id}`)
             index < 2 ? buttonsFirstLine.push(button) : buttonsSecondLine.push(button)
         }
         const buttonsMarkup = Markup.inlineKeyboard([
