@@ -1,20 +1,5 @@
 ## 🤖 Telegram Bot Demo (tServer)
 
-### Preview
-![Bot Preview](assets/demo_photo1.png)
-
----
-
-### Demo Videos
-
-#### 🎥 Demo Video 1
-<video src="assets/demo_video1.mp4" controls width="500"></video>
-
-#### 🎥 Demo Video 2
-<video src="assets/demo_video2.mp4" controls width="500"></video>
-
----
-
 ## 👨‍💻 About the Project
 
 This Telegram bot is a personal pet project created for my own Telegram channel.  
@@ -28,7 +13,17 @@ The bot is built with:
 - **Node.js** — backend logic  
 - **MySQL** — persistent storage  
 - **Telegraf.js** — Telegram Bot API framework  
-- **node-schedule** — cron-based scheduled posting  
+- **node-schedule** — cron-based scheduled posting
+---
+
+### Preview
+![Bot Preview](assets/demo_photo1.png)
+
+#### 🎥 Demo Video 1
+https://github.com/user-attachments/assets/c674856d-951d-4ae8-bfb7-ba76730b51ce
+
+#### 🎥 Demo Video 2
+https://github.com/user-attachments/assets/eda79102-623b-46c3-9091-a28097b54bc5
 
 ---
 
