@@ -1,4 +1,4 @@
-## 🤖 Telegram Bot Demo (tServer)
+# 🤖 Telegram Bot Demo (tServer)
 
 ## 👨‍💻 About the Project
 
@@ -29,8 +29,6 @@ https://github.com/user-attachments/assets/eda79102-623b-46c3-9091-a28097b54bc5
 
 ## ✨ Bot Functionality
 
-The bot serves two main roles:
-
 ### **1. Interactive Quiz Gameplay**
 Telegram users can play two quiz types directly in chat with the bot:
 
@@ -57,29 +55,6 @@ The bot automatically prepares and posts content to a Telegram channel according
 - ⏰ *Every day at 18:00* — Fact Quiz post  
 - ⏰ *Every 3 days at 22:00* — Bot Post (general content)
 
-Implemented via `node-schedule` in:
-
-- `tServer.js`  
-- `src/Builders/botpost.js`
-
 This turns the bot into a lightweight automated content generator for the channel.
 
 ---
-
-### **3. User Commands & Admin Commands**
-
-#### 🧑‍💻 Regular users can:
-- play quizzes  
-- switch quiz types  
-- open the main menu  
-- possibly save favorite words (early feature)
-
-#### 👑 The admin can:
-- send bot commands for testing/validating quiz content  
-- trigger manual quiz posts  
-- inspect message flow  
-- receive all incoming user messages for moderation
-
-Admin message handling:
-- `src/Handlers/adminHandler.js`  
-- admin routing inside `tServer.js`
