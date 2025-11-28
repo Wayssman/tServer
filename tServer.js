@@ -71,6 +71,8 @@ bot.on(message('text'), async (ctx) => {
   if (ctx.message.from.username === process.env.TELEGRAM_ADMIN_NAME) {
     // Читаем сообщение от админа и передаем в обработчик комманд
     await handleAdminMessage(ctx.message.chat.id, ctx.message.text)
+  } else {
+    await bot.telegram.sendMessage(process.env.TELEGRAM_ADMIN_CHAT_ID, ctx.message.text)
   }
 })
 
